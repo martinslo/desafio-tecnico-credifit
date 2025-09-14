@@ -1,0 +1,52 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Empresa {
+  id                Int          @id @default(autoincrement())
+  cnpj              String       @unique
+  razaoSocial       String
+  nomeRepresentante String
+  cpfRepresentante  String
+  email             String       @unique
+  senha             String
+  funcionarios      Funcionario[]
+}
+
+model Funcionario {
+  id          Int          @id @default(autoincrement())
+  nome        String
+  cpf         String       @unique
+  email       String       @unique
+  senha       String
+  salario     Float
+  empresaId   Int
+  empresa     Empresa      @relation(fields: [empresaId], references: [id])
+  emprestimos Emprestimo[]
+}
+
+model Emprestimo {
+  id            Int         @id @default(autoincrement())
+  funcionarioId Int
+  funcionario   Funcionario @relation(fields: [funcionarioId], references: [id])
+  valor         Float
+  parcelas      Int
+  status        String
+  scoreUsado    Int
+  createdAt     DateTime    @default(now())
+  parcelasGeradas Parcela[]
+}
+
+model Parcela {
+  id           Int        @id @default(autoincrement())
+  numero       Int
+  valor        Float
+  vencimento   DateTime
+  emprestimoId Int
+  emprestimo   Emprestimo @relation(fields: [emprestimoId], references: [id])
+}
