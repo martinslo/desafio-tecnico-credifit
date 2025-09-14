@@ -1,53 +1,83 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { PrismaService } from 'prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
+import { Empresa, Funcionario } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private prisma: PrismaService,
-    private jwtService: JwtService,
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
   ) {}
 
+  async validateUser(
+    email: string,
+    senha: string,
+  ): Promise<Empresa | Funcionario | null> {
+    let usuario: Empresa | Funcionario | null =
+      await this.prisma.funcionario.findUnique({
+        where: { email },
+      });
 
-  async register(email: string, password: string) {
-    const existingUser = await this.prisma.usuario.findUnique({
-      where: { email },
-    });
-    if (existingUser) {
-      throw new UnauthorizedException('Email já cadastrado');
+    if (!usuario) {
+      usuario = await this.prisma.empresa.findUnique({ where: { email } });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    if (!usuario) {
+      throw new UnauthorizedException('Usuário não encontrado');
+    }
 
-    const user = await this.prisma.usuario.create({
-      data: {
-        email,
-        password: hashedPassword,
-      },
-    });
+    const senhaValida = await bcrypt.compare(senha, usuario.senha);
+    if (!senhaValida) {
+      throw new UnauthorizedException('Senha inválida');
+    }
 
-    const { password: _, ...result } = user;
-    return result;
+    return usuario;
   }
 
-  async validateUser(email: string, password: string) {
-    const user = await this.prisma.usuario.findUnique({ where: { email } });
-    if (!user) return null;
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) return null;
-
-
-    const { password: _, ...result } = user;
-    return result;
-  }
-
-  async login(user: any) {
-    const payload = { email: user.email, sub: user.id };
+  login(usuario: Empresa | Funcionario) {
+    const payload = {
+      sub: usuario.id,
+      email: usuario.email,
+      tipo: 'funcionario' in usuario ? 'funcionario' : 'empresa',
+    };
     return {
       access_token: this.jwtService.sign(payload),
     };
+  }
+
+  async registerFuncionario(data: {
+    nome: string;
+    email: string;
+    senha: string;
+    cpf: string;
+    salario: number;
+    empresaId: number;
+  }): Promise<Funcionario> {
+    const hashedSenha = await bcrypt.hash(data.senha, 10);
+    const funcionario = await this.prisma.funcionario.create({
+      data: { ...data, senha: hashedSenha },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { senha, ...rest } = funcionario;
+    return rest as Funcionario;
+  }
+
+  async registerEmpresa(data: {
+    cnpj: string;
+    razaoSocial: string;
+    nomeRepresentante: string;
+    cpfRepresentante: string;
+    email: string;
+    senha: string;
+  }): Promise<Empresa> {
+    const hashedSenha = await bcrypt.hash(data.senha, 10);
+    const empresa = await this.prisma.empresa.create({
+      data: { ...data, senha: hashedSenha },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { senha, ...rest } = empresa;
+    return rest as Empresa;
   }
 }
