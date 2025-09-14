@@ -9,8 +9,8 @@ jest.mock('bcrypt');
 
 describe('AuthService', () => {
   let service: AuthService;
-  let prismaService: PrismaService;
   let jwtService: JwtService;
+  let prismaService: PrismaService;
 
   const mockPrismaService = {
     funcionario: {
@@ -67,10 +67,15 @@ describe('AuthService', () => {
         empresaId: 1,
       };
 
-      mockPrismaService.funcionario.findUnique.mockResolvedValue(mockFuncionario);
+      mockPrismaService.funcionario.findUnique.mockResolvedValue(
+        mockFuncionario,
+      );
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
-      const result = await service.validateUser('funcionario@test.com', 'password');
+      const result = await service.validateUser(
+        'funcionario@test.com',
+        'password',
+      );
 
       expect(result).toEqual(mockFuncionario);
       expect(bcrypt.compare).toHaveBeenCalledWith('password', 'hashedPassword');
@@ -100,9 +105,9 @@ describe('AuthService', () => {
       mockPrismaService.funcionario.findUnique.mockResolvedValue(null);
       mockPrismaService.empresa.findUnique.mockResolvedValue(null);
 
-      await expect(service.validateUser('nonexistent@test.com', 'password')).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(
+        service.validateUser('nonexistent@test.com', 'password'),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw UnauthorizedException for invalid password', async () => {
@@ -116,12 +121,14 @@ describe('AuthService', () => {
         empresaId: 1,
       };
 
-      mockPrismaService.funcionario.findUnique.mockResolvedValue(mockFuncionario);
+      mockPrismaService.funcionario.findUnique.mockResolvedValue(
+        mockFuncionario,
+      );
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
-      await expect(service.validateUser('funcionario@test.com', 'wrongpassword')).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(
+        service.validateUser('funcionario@test.com', 'wrongpassword'),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 
@@ -159,7 +166,9 @@ describe('AuthService', () => {
       };
 
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashedPassword');
-      mockPrismaService.funcionario.create.mockResolvedValue(mockCreatedFuncionario);
+      mockPrismaService.funcionario.create.mockResolvedValue(
+        mockCreatedFuncionario,
+      );
 
       const result = await service.registerFuncionario(registerData);
 
