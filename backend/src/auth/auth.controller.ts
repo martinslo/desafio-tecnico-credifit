@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './local-auth.guard';
-import { LoginResponseDto } from './dto/login-responde.dto';
+import { LoginResponseDto } from './dto/login-response.dto';
 import { LoginUsuarioDto } from './dto/login-usuario.dto';
 import { RegisterFuncionarioDto } from './dto/register-funcionario.dto';
 import { RegisterEmpresaDto } from './dto/register-empresa.dto';
